@@ -1,0 +1,303 @@
+<style>
+  .reserva-container {
+    max-width: 550px;
+    margin: 20px auto;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    padding: 30px;
+    border: 4px solid #ffcf00; 
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    color: #333;
+    box-sizing: border-box;
+  }
+  .reserva-container h3 {
+    text-align: center;
+    color: #0055bf; 
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .form-group {
+    margin-bottom: 18px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #4a5568;
+  }
+  .form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    font-size: 15px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
+  }
+  .form-control:focus {
+    border-color: #0055bf;
+    background-color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 85, 191, 0.15);
+  }
+  .row-flex {
+    display: flex;
+    gap: 15px;
+  }
+  .row-flex .form-group {
+    flex: 1;
+  }
+  .resumo-preco {
+    background: #f7fafc;
+    border-left: 6px solid #ffcf00; 
+    padding: 20px;
+    border-radius: 8px;
+    margin: 25px 0;
+  }
+  .resumo-linha {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: #4a5568;
+  }
+  .resumo-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed #cbd5e0;
+    font-weight: 800;
+    font-size: 20px;
+    color: #2d3748;
+  }
+  .desconto-aviso {
+    font-size: 13px;
+    color: #38a169;
+    margin-top: 5px;
+    display: none; 
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 16px;
+    background: #0055bf; 
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .btn-submit:hover {
+    background: #004299; 
+  }
+  .btn-submit:active {
+    transform: scale(0.98);
+  }
+  .btn-submit:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
+  }
+  #mensagem_status {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+</style>
+
+<div class="reserva-container" id="reserva-visita">
+  <h3>Marcação de Visita a Grupo</h3>
+  
+  <div class="form-group">
+    <label>Nome do Responsável / Escola / Entidade:</label>
+    <input type="text" id="nome_resp" class="form-control" placeholder="Ex: Escola Básica ou Nome Próprio" required>
+  </div>
+
+  <div class="row-flex">
+    <div class="form-group">
+      <label>Email de Contacto:</label>
+      <input type="email" id="email_resp" class="form-control" placeholder="exemplo@email.com" required>
+    </div>
+    <div class="form-group">
+      <label>Telefone / Telemóvel:</label>
+      <input type="tel" id="telefone_resp" class="form-control" placeholder="Nº de Contacto" required>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Nome da Pessoa do contacto telefónico:</label>
+    <input type="text" id="nome_forneceu_contacto" class="form-control" placeholder="Responsável no local">
+  </div>
+
+  <div class="form-group">
+    <label>Data e Hora da Visita:</label>
+    <input type="datetime-local" id="data_visita" class="form-control" required>
+  </div>
+
+  <div class="row-flex">
+    <div class="form-group">
+      <label>Modelo da Visita:</label>
+      <select id="modelo_visita" class="form-control" onchange="calcularPreco()">
+        <option value="guiada">Visita Guiada</option>
+        <option value="sem_guia">Visita Sem Guia</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Opção de Exposições:</label>
+      <select id="tipo_expo" class="form-control" onchange="calcularPreco()">
+        <option value="1">1 Exposição (LEGO)</option>
+        <option value="2">2 Exposições (LEGO + 3D)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row-flex">
+    <div class="form-group">
+      <label>Crianças / Estudantes:</label>
+      <input type="number" id="num_criancas" class="form-control" onchange="calcularPreco()" value="0" min="0">
+    </div>
+
+    <div class="form-group">
+      <label>Acompanhantes (Adultos):</label>
+      <input type="number" id="num_adultos" class="form-control" onchange="calcularPreco()" value="0" min="0">
+    </div>
+  </div>
+  
+  <div id="aviso_oferta" class="desconto-aviso">
+    Oferta aplicada: <span id="adultos_gratis">0</span> acompanhante(s) entra(m) gratuitamente!
+  </div>
+
+  <div class="form-group" style="margin-top: 18px;">
+    <label>Método de Pagamento:</label>
+    <select id="pagamento" class="form-control">
+      <option value="Local">Pagamento no Local</option>
+      <option value="Previo">Pagamento Prévio (Transferência Bancária)</option>
+    </select>
+  </div>
+
+  <div class="resumo-preco">
+    <div class="resumo-linha">
+      <span>Preço Unitário (por pessoa):</span>
+      <span id="preco_pessoa">10.00€</span>
+    </div>
+    <div class="resumo-linha" style="font-size: 13px;">
+      <span>Visitantes Pagantes:</span>
+      <span id="total_pagantes">0</span>
+    </div>
+    <div class="resumo-total">
+      <span>Total a Pagar:</span>
+      <span id="preco_total">0.00€</span>
+    </div>
+  </div>
+
+  <button class="btn-submit" onclick="submeterReserva()">
+    Verificar Disponibilidade
+  </button>
+  
+  <p id="mensagem_status"></p>
+</div>
+
+<script>
+  // Tabela de Preços Organizada conforme a imagem
+  const PRECOS = {
+    guiada: { '1': 10.00, '2': 13.50 },
+    sem_guia: { '1': 7.00, '2': 10.50 }
+  };
+
+  window.onload = function() {
+    calcularPreco();
+  };
+
+  function calcularPreco() {
+    const modeloVisita = document.getElementById('modelo_visita').value;
+    const tipoExpo = document.getElementById('tipo_expo').value;
+    const numCriancas = parseInt(document.getElementById('num_criancas').value) || 0;
+    const numAdultos = parseInt(document.getElementById('num_adultos').value) || 0;
+    
+    const precoBase = PRECOS[modeloVisita][tipoExpo];
+    
+    // Regra da oferta: 1 adulto grátis por cada 10 crianças
+    const adultosGratuitosPermitidos = Math.floor(numCriancas / 10);
+    const adultosGratisAplicados = Math.min(adultosGratuitosPermitidos, numAdultos);
+    const adultosPagantes = numAdultos - adultosGratisAplicados;
+    
+    const totalPessoasPagantes = numCriancas + adultosPagantes; 
+    const precoTotal = totalPessoasPagantes * precoBase;
+
+    // Atualiza interface da oferta
+    const avisoOferta = document.getElementById('aviso_oferta');
+    if (adultosGratisAplicados > 0) {
+       document.getElementById('adultos_gratis').innerText = adultosGratisAplicados;
+       avisoOferta.style.display = 'block';
+    } else {
+       avisoOferta.style.display = 'none';
+    }
+
+    document.getElementById('preco_pessoa').innerText = precoBase.toFixed(2).replace('.', ',') + "€";
+    document.getElementById('total_pagantes').innerText = totalPessoasPagantes;
+    document.getElementById('preco_total').innerText = precoTotal.toFixed(2).replace('.', ',') + "€";
+  }
+
+  async function submeterReserva() {
+    const btn = document.querySelector('.btn-submit');
+    const status = document.getElementById('mensagem_status');
+    btn.innerText = "A verificar calendário...";
+    btn.disabled = true;
+
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzs-K7-KKK0gavYx7svVDoClVsBo6FyPCqhleLKkRWSAjJw85wADBCIEVybYzeQck05/exec';
+
+    const dados = {
+      nome: document.getElementById('nome_resp').value,
+      email: document.getElementById('email_resp').value,
+      telefone: document.getElementById('telefone_resp').value,
+      nome_forneceu_contacto: document.getElementById('nome_forneceu_contacto').value,
+      data_hora: document.getElementById('data_visita').value,
+      modelo_visita: document.getElementById('modelo_visita').options[document.getElementById('modelo_visita').selectedIndex].text,
+      exposicoes: document.getElementById('tipo_expo').value,
+      criancas: document.getElementById('num_criancas').value,
+      adultos: document.getElementById('num_adultos').value,
+      pagamento: document.getElementById('pagamento').value,
+      preco_total: document.getElementById('preco_total').innerText
+    };
+
+    if(!dados.nome || !dados.email || !dados.telefone || !dados.data_hora || (dados.criancas == 0 && dados.adultos == 0)) {
+       status.style.color = "#e53e3e";
+       status.innerText = "Por favor, preencha todos os campos obrigatórios e indique o número de visitantes.";
+       btn.innerText = "Verificar Disponibilidade";
+       btn.disabled = false;
+       return;
+    }
+
+    try {
+      const response = await fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(dados)
+      });
+      const resultado = await response.json();
+
+      if (resultado.status === 'sucesso') {
+        status.style.color = "#0055bf";
+        status.innerText = "Visita agendada com sucesso! Receberá um email em breve.";
+      } else {
+        status.style.color = "#e53e3e";
+        status.innerText = "Erro: Este horário já se encontra ocupado. Escolha outra data.";
+      }
+    } catch (error) {
+      status.style.color = "#e53e3e";
+      status.innerText = "Erro na ligação. Tente novamente.";
+    }
+    
+    btn.innerText = "Verificar Disponibilidade";
+    btn.disabled = false;
+  }
+</script>
