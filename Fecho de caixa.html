@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fecho de caixa</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--ac:#1f6f4a;--ac2:#e3f2ea;--bd:#dcdad3;--rd:#b3261e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--card:#222221;--tx:#efeee9;--mu:#9a9a93;--ac:#5fc08f;--ac2:#1d3328;--bd:#383835;--rd:#ff8a80}}
+:root[data-theme="dark"]{--bg:#161615;--card:#222221;--tx:#efeee9;--mu:#9a9a93;--ac:#5fc08f;--ac2:#1d3328;--bd:#383835;--rd:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border:0}
+.row label{font-weight:600;min-width:80px}
+.row small{color:var(--mu);font-weight:400}
+input[type=number]{width:90px;font-size:18px;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);text-align:right}
+.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:700}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:14px;background:var(--ac);color:#fff;width:100%;cursor:pointer}
+button.sec{background:transparent;color:var(--mu);border:1px solid var(--bd);width:auto;padding:8px 12px;font-weight:600}
+@media (prefers-color-scheme:dark){button:not(.sec){color:#06210f}}
+table{width:100%;border-collapse:collapse}
+th,td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--bd)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mu);font-size:13px;font-weight:600}
+.k{background:var(--ac2);font-weight:700}
+.big{font-size:26px;font-weight:800;color:var(--ac)}
+.warn{color:var(--rd);font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+details summary{cursor:pointer;color:var(--mu);font-weight:600}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Fecho de caixa</h1>
+
+<div class="card">
+  <div class="row"><label for="alvo">Deixar na caixa</label><span><input type="number" id="alvo" value="100" min="0" step="1" inputmode="decimal"> €</span></div>
+  <div id="inputs"></div>
+  <div class="tot" style="margin-top:10px"><span>Total contado</span><span id="total">0,00 €</span></div>
+</div>
+
+<button id="go">Calcular</button>
+
+<div id="out" style="margin-top:14px"></div>
+
+<div class="card">
+  <details>
+    <summary>Ajustar a composição ideal da caixa</summary>
+    <p style="color:var(--mu);font-size:14px">Quantidade ideal de cada valor a deixar na caixa. O programa aproxima-se disto o mais possível com o que existe.</p>
+    <div id="ideais"></div>
+    <button class="sec" id="reset" style="margin-top:8px">Repor valores por defeito</button>
+  </details>
+</div>
+</main>
+
+<script>
+const D=[
+ {c:50000,n:"Nota 500 €"},{c:20000,n:"Nota 200 €"},{c:10000,n:"Nota 100 €"},{c:5000,n:"Nota 50 €"},
+ {c:2000,n:"Nota 20 €"},{c:1000,n:"Nota 10 €"},{c:500,n:"Nota 5 €"},
+ {c:200,n:"Moeda 2 €"},{c:100,n:"Moeda 1 €"},{c:50,n:"Moeda 50 cênt."},{c:20,n:"Moeda 20 cênt."},
+ {c:10,n:"Moeda 10 cênt."},{c:5,n:"Moeda 5 cênt."},{c:2,n:"Moeda 2 cênt."},{c:1,n:"Moeda 1 cênt."}
+];
+D.forEach(d=>{if(d.n.includes("cênt"))d.n=d.n.replace("cênt.","cênt")});
+const IDEAL0=[0,0,0,0,2,2,2,4,5,4,5,5,5,5,5];
+const W=[300,300,300,200,30,20,15,8,6,4,3,2,1.5,1,1];
+let ideal=IDEAL0.slice();
+const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const $=id=>document.getElementById(id);
+
+$("inputs").innerHTML=D.map((d,i)=>`<div class="row"><label for="q${i}">${d.n}</label><input type="number" id="q${i}" min="0" step="1" inputmode="numeric" placeholder="0"></div>`).join("");
+$("ideais").innerHTML=`<div class="grid">`+D.map((d,i)=>`<div class="row"><label for="i${i}">${d.n}</label><input type="number" id="i${i}" min="0" step="1" inputmode="numeric" value="${ideal[i]}" style="width:70px"></div>`).join("")+`</div>`;
+
+const counts=()=>D.map((d,i)=>Math.max(0,parseInt($("q"+i).value)||0));
+function upTotal(){const q=counts();$("total").textContent=eur(q.reduce((s,n,i)=>s+n*D[i].c,0))}
+D.forEach((d,i)=>{$("q"+i).addEventListener("input",upTotal);$("i"+i).addEventListener("input",e=>{ideal[i]=Math.max(0,parseInt(e.target.value)||0)})});
+$("reset").onclick=()=>{ideal=IDEAL0.slice();D.forEach((d,i)=>$("i"+i).value=ideal[i])};
+
+function solve(q,target){
+  const M=target+3000, N=D.length;
+  let dp=new Float64Array(M+1).fill(Infinity); dp[0]=0;
+  const ch=[];
+  for(let i=0;i<N;i++){
+    const c=D[i].c, nd=new Float64Array(M+1).fill(Infinity), choice=new Uint16Array(M+1);
+    const cost=[];for(let k=0;k<=q[i];k++)cost.push(W[i]*(k-ideal[i])**2);
+    for(let a=0;a<=M;a++){
+      const kmax=Math.min(q[i],Math.floor(a/c));
+      let best=Infinity,bk=0;
+      for(let k=0;k<=kmax;k++){
+        const p=dp[a-k*c]; if(p===Infinity)continue;
+        const v=p+cost[k]; if(v<best){best=v;bk=k}
+      }
+      nd[a]=best;choice[a]=bk;
+    }
+    dp=nd;ch.push(choice);
+  }
+  let a=-1;
+  for(let x=target;x<=M;x++){if(dp[x]<Infinity){a=x;break}}
+  if(a<0)return null;
+  const left=new Array(N).fill(0), amount=a;
+  for(let i=N-1;i>=0;i--){const k=ch[i][a];left[i]=k;a-=k*D[i].c}
+  return {left,amount};
+}
+
+$("go").onclick=()=>{
+  const q=counts(), total=q.reduce((s,n,i)=>s+n*D[i].c,0);
+  const target=Math.round((parseFloat($("alvo").value)||0)*100);
+  const out=$("out");
+  if(total<target){out.innerHTML=`<div class="card warn">Só há ${eur(total)} na caixa, menos do que os ${eur(target)} a deixar.</div>`;return}
+  const r=solve(q,target);
+  if(!r){out.innerHTML=`<div class="card warn">Não consegui formar ${eur(target)} com as notas e moedas contadas.</div>`;return}
+  const take=q.map((n,i)=>n-r.left[i]), takeTot=total-r.amount;
+  let note="";
+  if(r.amount!==target)note=`<p class="warn">Não é possível deixar exatamente ${eur(target)}. O mais perto é ${eur(r.amount)} (+${eur(r.amount-target)}).</p>`;
+  const bigLeft=r.left.some((n,i)=>n&&D[i].c>=5000);
+  if(bigLeft)note+=`<p class="warn">Atenção: ficam notas de 50 € ou mais na caixa porque não havia alternativa.</p>`;
+  const rows=D.map((d,i)=>q[i]?`<tr><td>${d.n}</td><td>${q[i]}</td><td class="k">${r.left[i]}</td><td>${take[i]}</td></tr>`:"").join("");
+  out.innerHTML=`<div class="card">
+    <div class="grid"><div><div style="color:var(--mu);font-size:14px">Retirar (para o cofre)</div><div class="big">${eur(takeTot)}</div></div>
+    <div><div style="color:var(--mu);font-size:14px">Fica na caixa</div><div class="big">${eur(r.amount)}</div></div></div>
+    ${note}</div>
+    <div class="card wrap"><table><thead><tr><th>Valor</th><th>Contado</th><th>Deixar</th><th>Retirar</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+};
+upTotal();
+</script>
+</body>
+</html>
